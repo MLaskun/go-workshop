@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,13 +28,15 @@ func (s *APIServer) Run() error {
 	r := chi.NewRouter()
 	r.Method("GET", "/client/{id}", makeHTTPHandlerFunc(s.HandleGetClientByID))
 	r.Method("POST", "/client", makeHTTPHandlerFunc(s.HandleCreateClient))
-	r.Method("DELETE", "/client/{id}", makeHTTPHandlerFunc(s.HancleDeleteClient))
+	r.Method("DELETE", "/client/{id}", makeHTTPHandlerFunc(s.HandleDeleteClient))
 
 	return http.ListenAndServe(s.listenAddr, r)
 }
 
 func (s *APIServer) HandleGetClientByID(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+	ctx := context.WithValue(r.Context(), requestKey, r)
+
+	id, err := getID(ctx)
 	if err != nil {
 		return err
 	}
@@ -60,8 +63,9 @@ func (s *APIServer) HandleCreateClient(w http.ResponseWriter, r *http.Request) e
 	return WriteJSON(w, http.StatusCreated, client)
 }
 
-func (s *APIServer) HancleDeleteClient(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+func (s *APIServer) HandleDeleteClient(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.WithValue(r.Context(), requestKey, r)
+	id, err := getID(ctx)
 	if err != nil {
 		return err
 	}
@@ -93,7 +97,13 @@ func makeHTTPHandlerFunc(f apiFunc) http.HandlerFunc {
 	}
 }
 
-func getID(r *http.Request) (int, error) {
+type contextKey string
+
+const requestKey = contextKey("request")
+
+func getID(ctx context.Context) (int, error) {
+	r := ctx.Value(requestKey).(*http.Request)
+
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
