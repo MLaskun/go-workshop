@@ -26,11 +26,20 @@ func NewServer(listenAddr string, store storage.Storage) *APIServer {
 
 func (s *APIServer) Run() error {
 	r := chi.NewRouter()
+	r.Method("GET", "/client", makeHTTPHandlerFunc(s.HandleGetClients))
 	r.Method("GET", "/client/{id}", makeHTTPHandlerFunc(s.HandleGetClientByID))
 	r.Method("POST", "/client", makeHTTPHandlerFunc(s.HandleCreateClient))
 	r.Method("DELETE", "/client/{id}", makeHTTPHandlerFunc(s.HandleDeleteClient))
 
 	return http.ListenAndServe(s.listenAddr, r)
+}
+
+func (s *APIServer) HandleGetClients(w http.ResponseWriter, r *http.Request) error {
+	clients, err := s.store.GetClients()
+	if err != nil {
+		return err
+	}
+	return WriteJSON(w, http.StatusOK, clients)
 }
 
 func (s *APIServer) HandleGetClientByID(w http.ResponseWriter, r *http.Request) error {

@@ -71,6 +71,24 @@ func (s *PostgresStorage) CreateClient(cli *types.Client) error {
 	return nil
 }
 
+func (s *PostgresStorage) GetClients() ([]*types.Client, error) {
+	rows, err := s.db.Query(`select * from client`)
+	if err != nil {
+		return nil, err
+	}
+
+	clients := []*types.Client{}
+	for rows.Next() {
+		client, err := scanIntoClient(rows)
+		if err != nil {
+			return nil, err
+		}
+		clients = append(clients, client)
+	}
+
+	return clients, nil
+}
+
 func (s *PostgresStorage) GetClientByID(id int) (*types.Client, error) {
 	rows, err := s.db.Query(`select * from client where client_id = $1`, id)
 	if err != nil {
@@ -94,4 +112,16 @@ func (s *PostgresStorage) GetClientByID(id int) (*types.Client, error) {
 func (s *PostgresStorage) DeleteClient(id int) error {
 	_, err := s.db.Query(`delete from client where client_id = $1`, id)
 	return err
+}
+
+func scanIntoClient(rows *sql.Rows) (*types.Client, error) {
+	client := &types.Client{}
+	err := rows.Scan(
+		&client.ID,
+		&client.FirstName,
+		&client.LastName,
+		&client.Email,
+		&client.PhoneNO)
+
+	return client, err
 }
