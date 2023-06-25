@@ -43,7 +43,7 @@ func (s *APIServer) HandleGetClients(w http.ResponseWriter, r *http.Request) err
 }
 
 func (s *APIServer) HandleGetClientByID(w http.ResponseWriter, r *http.Request) error {
-	ctx := context.WithValue(r.Context(), requestKey, r)
+	ctx := r.Context()
 
 	id, err := getID(ctx)
 	if err != nil {
